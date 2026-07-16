@@ -863,7 +863,11 @@ def setup_environment(app):
             except Exception as e:
                 logger.error(f"Error auto-starting Telegram bot: {e}")
 
-    threading.Thread(target=_init_databases_and_schedulers, daemon=True).start()
+    from websocket_proxy.app_integration import should_start_websocket
+    if should_start_websocket():
+        threading.Thread(target=_init_databases_and_schedulers, daemon=True).start()
+    else:
+        logger.debug("Skipping databases and schedulers initialization in parent/monitor process")
 
 
 app = create_app()
@@ -892,7 +896,11 @@ def _restore_caches_background():
         except Exception as e:
             logger.debug(f"Cache restoration skipped: {e}")
 
-threading.Thread(target=_restore_caches_background, daemon=True).start()
+from websocket_proxy.app_integration import should_start_websocket
+if should_start_websocket():
+    threading.Thread(target=_restore_caches_background, daemon=True).start()
+else:
+    logger.debug("Skipping cache restoration in parent/monitor process")
 
 
 # Database session cleanup (teardown handler)
@@ -1067,4 +1075,4 @@ if __name__ == "__main__":
             f"{C}{BL}{H*(_W-2)}{BR}{R}", "",
         ]), flush=True)
 
-    socketio.run(app, host=host_ip, port=port, debug=debug, reloader_options=reloader_options)
+    socketio.run(app, host=host_ip, port=port, debug=debug, reloader_options=reloader_options, allow_unsafe_werkzeug=True)
