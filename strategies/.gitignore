@@ -6,7 +6,7 @@ strategy_env.json
 .secure_env
 
 # Uploaded strategy scripts
-scripts/*.py
+# scripts/*.py
 
 # Keep example strategies
 !examples/
