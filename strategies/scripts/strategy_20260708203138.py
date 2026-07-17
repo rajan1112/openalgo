@@ -12,7 +12,7 @@ from openalgo import api
 # CONFIGURATION 
 # ==============================================================================
 # Set to True to place actual orders. Keep False for Paper Trading / Dry Run.
-LIVE_TRADING = False
+LIVE_TRADING = True
 
 # Risk & Size Parameters
 LOTS = 5
@@ -113,6 +113,20 @@ def calculate_supertrend(df, period=7, multiplier=3):
     df['supertrend'] = trend
     return df
 
+def adjust_dataframe_timezone(df):
+    """
+    Adjusts the index of history DataFrame to correct any timezone shifts
+    introduced by naive datetime.timestamp() calls on non-IST servers.
+    """
+    if df is None or isinstance(df, dict) or df.empty:
+        return df
+    local_now = datetime.datetime.now()
+    local_offset = local_now.astimezone().utcoffset() or datetime.timedelta(0)
+    excess_shift = datetime.timedelta(hours=5, minutes=30) - local_offset
+    if excess_shift != datetime.timedelta(0) and isinstance(df.index, pd.DatetimeIndex):
+        df.index = df.index - excess_shift
+    return df
+
 # ==============================================================================
 # INSTRUMENT & ORDER UTILITIES
 # ==============================================================================
@@ -129,6 +143,7 @@ def get_nifty_pivots(client):
         start_date=start_date,
         end_date=end_date
     )
+    df = adjust_dataframe_timezone(df)
     
     if isinstance(df, dict) or df.empty:
         raise ValueError("Could not fetch sufficient Nifty daily historical data from OpenAlgo.")
@@ -313,6 +328,7 @@ def run_strategy():
                     start_date=start_date,
                     end_date=end_date
                 )
+                df = adjust_dataframe_timezone(df)
                 
                 if isinstance(df, dict) or df.empty:
                     logger.warning("Waiting for sufficient 5m spot candles data...")
