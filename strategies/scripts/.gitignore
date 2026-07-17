@@ -1,5 +1,4 @@
 # Ignore all strategy scripts uploaded by users
-*.py
 
 # But keep this .gitignore file
 !.gitignore
